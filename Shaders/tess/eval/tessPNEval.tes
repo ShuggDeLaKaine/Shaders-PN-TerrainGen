@@ -1,0 +1,81 @@
+#version 450 core
+
+//reading in a triangle, split tesselated triangels evenly in a counter-clockwise direction (ccw).
+layout (triangles, equal_spacing, ccw) in;
+
+//forward declare functions to perfrom interpolation with the barycentric coordinates from the Primitive Generator.
+vec2 interpolate2D(vec2 v0, vec2 v1, vec2 v2);
+vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2);
+
+//uniform matrices to perform transformations, previously this would have been done in vertex shader.
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+struct OutputPatch
+{
+	vec3 worldPos_B030;
+	vec3 worldPos_B021;
+	vec3 worldPos_B012;
+	vec3 worldPos_B003;
+	vec3 worldPos_B102;
+	vec3 worldPos_B201;
+	vec3 worldPos_B300;
+	vec3 worldPos_B210;
+	vec3 worldPos_B120;
+	vec3 worldPos_B111;
+	vec3 tc_norms[3];
+};
+
+in patch OutputPatch outPatch;
+
+out vec3 worldPos_FS_in;
+out vec3 normals;
+
+
+void main()
+{
+	//set the single normal, interpolating between the tc_norms[] in the OutPatch struct.
+	normals = interpolate3D(outPatch.tc_norms[0], outPatch.tc_norms[1], outPatch.tc_norms[2]);
+
+	//u, v, e - berycentric coords, set to tessellated coords for x, y, z.
+	float u = gl_TessCoord.x;
+	float v = gl_TessCoord.y;
+	float w = gl_TessCoord.z;
+
+	//set 'to the power of' 2 and 3 for u, v, w.
+	float uPow3 = pow(u, 3);
+	float vPow3 = pow(v, 3);
+	float wPow3 = pow(w, 3);
+	float uPow2 = pow(u, 2);
+	float vPow2 = pow(v, 2);
+	float wPow2 = pow(w, 2);
+
+	//apply the new geometry to each point.
+	worldPos_FS_in = outPatch.worldPos_B300 * wPow3 + 
+					 outPatch.worldPos_B030 * uPow3 +
+					 outPatch.worldPos_B003 * vPow3 +
+					 outPatch.worldPos_B210 * 3.0f * wPow2 * u +
+					 outPatch.worldPos_B120 * 3.0f * w * uPow2 +
+					 outPatch.worldPos_B201 * 3.0f * wPow2 * v +
+					 outPatch.worldPos_B021 * 3.0f * uPow2 * v +
+					 outPatch.worldPos_B102 * 3.0f * w * vPow2 +
+					 outPatch.worldPos_B012 * 3.0f * u * vPow2 +
+					 outPatch.worldPos_B111 * 6.0f * w * u * v;
+
+	//set positions in the world space.
+	gl_Position = projection * view * vec4(worldPos_FS_in, 1.0f);
+}
+
+//basic 2D linear interpolation (aka lerp). 
+vec2 interpolate2D(vec2 v0, vec2 v1, vec2 v2)
+{
+   	return vec2(gl_TessCoord.x) * v0 + vec2(gl_TessCoord.y) * v1 + vec2(gl_TessCoord.z) * v2;
+}
+
+//basic 3D linear interpolation(aka lerp). 
+vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2)
+{
+   	return vec3(gl_TessCoord.x) * v0 + vec3(gl_TessCoord.y) * v1 + vec3(gl_TessCoord.z) * v2;
+}
+

@@ -1,0 +1,123 @@
+#version 450 core
+
+layout (vertices = 3) out;
+
+float LODTessLevel_STEP_METHOD(float distance1, float distance2);
+float LODTessLevel_LINEAR_METHOD(float distance1, float distance2);
+float LODTessLevel_EXPO_METHOD(float distance1, float distance2);
+
+uniform vec3 viewPos;
+uniform int scale;
+uniform float minTessLvl;
+
+in vec3 posVS[];
+in vec2 texCoordsVS[];
+
+out vec3 posTCS[];
+out vec2 texCoordsTCS[];
+
+
+void main()
+{
+	vec3 newPosVS[3];
+
+	if(gl_InvocationID == 0)
+	{	
+		//alter position on y to reflect the height map, for accurate DD-LOD tessellation.
+		for(int i = 0; i < 3; i++)
+		{
+			newPosVS[i] = posVS[i];
+			newPosVS[i].y = newPosVS[i].y * scale;
+		}
+
+		//get distances from camera to vertices.
+		float eyeToVertexDist0 = distance(viewPos, newPosVS[0]);
+		float eyeToVertexDist1 = distance(viewPos, newPosVS[1]);
+		float eyeToVertexDist2 = distance(viewPos, newPosVS[2]); 
+
+		//calculate and set the tessellation levels, using the LOD...() and the distances above.
+		gl_TessLevelOuter[0] = LODTessLevel_EXPO_METHOD(eyeToVertexDist1, eyeToVertexDist2); 
+		gl_TessLevelOuter[1] = LODTessLevel_EXPO_METHOD(eyeToVertexDist2, eyeToVertexDist0); 
+		gl_TessLevelOuter[2] = LODTessLevel_EXPO_METHOD(eyeToVertexDist0, eyeToVertexDist1);
+		gl_TessLevelInner[0] = gl_TessLevelOuter[2]; 
+	}
+
+	posTCS[gl_InvocationID] = posVS[gl_InvocationID];
+	texCoordsTCS[gl_InvocationID] = texCoordsVS[gl_InvocationID];
+}
+
+//function to set distance dependant Level-Of-Detail tessellation level, using Step method.
+float LODTessLevel_STEP_METHOD(float distance1, float distance2)
+{
+	float averageDistance = (distance1 + distance2) * 0.5f;
+
+	if(averageDistance < 5)
+		return 160;
+	else if(averageDistance < 10)
+		return 120;
+	else if(averageDistance < 15)
+		return 80;
+	else if(averageDistance < 25)
+		return 40;
+	else if(averageDistance < 50)
+		return 20;
+	else if(averageDistance < 75)
+		return 10;
+	else if(averageDistance < 150)
+		return 5;
+	else if(averageDistance < 300)
+		return 2.5;
+	else
+		return 1;
+}
+
+//function to set distance dependant Level-Of-Detail tessellation level, using Linear method.
+float LODTessLevel_LINEAR_METHOD(float distance1, float distance2)
+{
+	//var for average Distance, init with the average of the two param distances.
+	float averageDistance = (distance1 + distance2) * 0.5f;
+	float slope = -0.1f;			//level of slope 
+	float tessLvl = 1.0f;			//tessellation level to return, initialised to 1.
+	float tessLvlMin = minTessLvl;	//lowest tessellation level.
+	float tessLvlMax = 30.0f;		//highest tessellation level.
+
+	//calculate tessLvl, y = ax + b
+	tessLvl = (slope * averageDistance) + tessLvlMax;
+
+	//check tessellation level is neither below the minimum or above the maximum tess levels, if so, then set to min or max.
+	if(tessLvl < tessLvlMin)
+		tessLvl = tessLvlMin;
+	else if(tessLvl > tessLvlMax)
+		tessLvl = tessLvlMax;
+	
+	//return the tessellation level.
+	return tessLvl;
+}
+
+//function to set distance dependant Level-Of-Detail tessellation level, using Exponential method.
+float LODTessLevel_EXPO_METHOD(float distance1, float distance2)
+{
+//*** x(d) = x0 * (1 + r)d ***
+//x(d) == tess lvl value at distance t							//tessLvl
+// x0  == initial value at distance=0							//tessLvlMax
+// r   == growth rate when r>0 or decay rate when r<, in %.		//slope
+// d   == distance in selected distance units.					//averageDistance 
+
+	float averageDistance = (distance1 + distance2) * 0.5f;		//average distance between two eye-2-vertices distances.
+	float slope = -0.015f;				//level of slope, aka rate of tessellation decay.  
+	float tessLvl = 1.0f;				//tessellation level to return, initialised to 1 as minimum level.
+	float tessLvlMin = minTessLvl;		//lowest tessellation level.
+	float tessLvlMax = 60.0f;			//highest tessellation level.
+
+	//calculate tessLvl = x(d) = x0 * (1 + r)d
+	tessLvl = exp(tessLvlMax * pow((1 + slope), averageDistance));
+
+	//check tessellation level is neither below the minimum or above the maximum tess levels, if so, then set to min or max.
+	if(tessLvl < tessLvlMin)
+		tessLvl = tessLvlMin;
+	else if(tessLvl > tessLvlMax)
+		tessLvl = tessLvlMax;
+	
+	//return the tessellation level.
+	return tessLvl;
+}

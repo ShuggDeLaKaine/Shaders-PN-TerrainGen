@@ -1,0 +1,35 @@
+// first step of tesselation shader
+// tesselation control shader add/deletes control points and determines the tesselatation level
+// patch has three control points here (three vertices for each triangle)
+#version 450 core
+
+layout (vertices = 3) out;
+
+//vectors stored as arrays - each patch has three vertices, each with an xyz pos and xyz norm value.
+in vec3 posVS[];		//posVS = position from Vertex Shader.
+in vec3 normVS[];		//posTC = position from this Tesselation Control shader.
+
+out vec3 posTC[];
+out vec3 normTC[];
+
+void main()
+{
+    //tesselation level; we will find this automatically later but for now hardcoded value.
+    int tessLevel = 15;
+
+    //gpu can calculate each control point in parallel.
+    //tesselation level same for entire patch so only need to set it once (for the first control point).
+    //gl_invocation called for each control point.
+    if (gl_InvocationID == 0)
+	{
+		//calculate the tessellation levels.
+        gl_TessLevelOuter[0] = tessLevel; 
+        gl_TessLevelOuter[1] = tessLevel; 
+        gl_TessLevelOuter[2] = tessLevel;
+        gl_TessLevelInner[0] = tessLevel; 
+    }
+
+   //pass through position and normal information.
+   posTC[gl_InvocationID]  = posVS[gl_InvocationID];
+   normTC[gl_InvocationID] = normVS[gl_InvocationID];
+}

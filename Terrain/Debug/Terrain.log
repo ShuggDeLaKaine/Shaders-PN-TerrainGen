@@ -1,0 +1,10 @@
+﻿  Source.cpp
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(116): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(298): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(299): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(303): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(304): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(306): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(307): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+c:\users\tomho\onedrive\documents\university\year_3\advanced_shaders\assignment\assignment\terrain\terrain\src\source.cpp(315): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+  Terrain.vcxproj -> C:\Users\tomho\OneDrive\Documents\University\Year_3\Advanced_Shaders\Assignment\Assignment\Terrain\Debug\Terrain.exe
