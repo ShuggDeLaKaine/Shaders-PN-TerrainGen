@@ -236,6 +236,7 @@ int main()
 		renderQuad();
 
 
+
 		//testing purposes, print position of camera.
 		if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 			camera.printCameraCoords();
