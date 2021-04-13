@@ -193,8 +193,9 @@ int main()
 		PerlinShader.setVec3("dirLight.diffuse", 0.2f, 0.2f, 0.2f);
 		PerlinShader.setVec3("dirLight.specular", 0.35f, 0.35f, 0.35f);
 
-		lightProjection = glm::ortho(-10.0f, 10.0f, -10.f, 10.0f, nearPlane, farPlane);
+		
 		lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		lightProjection = glm::ortho(-10.0f, 10.0f, -10.f, 10.0f, nearPlane, farPlane);		//using ortho as trying to model the sun, which is quite far away... so light rays are assumed to be parallel, no deform due to perspective projection.
 		lightSpaceMatrix = lightProjection * lightView;
 		PerlinShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
