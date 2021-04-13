@@ -105,6 +105,8 @@ int main()
 
 	Shader postShaderColour("..\\shaders\\vert\\postColourVert.vs", "..\\shaders\\frag\\postColourFrag.fs");
 	Shader postShaderDepth("..\\shaders\\vert\\postDepthVert.vs", "..\\shaders\\frag\\postDepthFrag.fs");
+	Shader postShadowDepth("..\\shaders\\vert\\postShadowDepthVert.vs", "..\\shaders\\frag\\postShadowDepthFrag.fs");
+
 
 #pragma endregion
 
@@ -147,8 +149,8 @@ int main()
 		glm::mat4 lightProjection;
 		glm::mat4 lightView;
 		glm::mat4 lightSpaceMatrix;
-		float nearPlane = 1.0f;
-		float farPlane = 7.5f;
+		float nearPlane = 1.0f;	//NOTE, may need to change frustum to encompass whole scene.
+		float farPlane = 7.5f;	//NOTE, may need to change frustum to encompass whole scene.
 
 
 		//PERLIN NOISE shader stuff.
@@ -195,7 +197,8 @@ int main()
 
 		
 		lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		lightProjection = glm::ortho(-10.0f, 10.0f, -10.f, 10.0f, nearPlane, farPlane);		//using ortho as trying to model the sun, which is quite far away... so light rays are assumed to be parallel, no deform due to perspective projection.
+		//DON'T LIKE THAT HARD CODED 10, 10, 10, 10.... needs to be automatic.
+		lightProjection = glm::ortho(-10.0f, 10.0f, -10.f, 10.0f, nearPlane, farPlane); //NOTE, may need to change frustum to encompass whole scene.		//using ortho as trying to model the sun, which is quite far away... so light rays are assumed to be parallel, no deform due to perspective projection.
 		lightSpaceMatrix = lightProjection * lightView;
 		PerlinShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
@@ -206,6 +209,12 @@ int main()
 		PerlinShader.setFloat("mat.shininess", 0.45f);
 		
 
+#pragma region SHADOW_MAPPING
+
+
+#pragma endregion
+
+#pragma region COLOUR_FRAMEBUFFER.
 		//FOR COLOUR BUFFER STUFF.
 		//FIRST PASS
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);		//bind the buffer
@@ -231,7 +240,9 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//render the quad with the texture on it.
 		renderQuad();
-		
+#pragma endregion
+
+#pragma region DEPTH_FRAMBUFFER
 		/*
 		//FOR DEPTH BUFFER STUFF
 		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);		//bind the buffer
@@ -245,8 +256,7 @@ int main()
 		if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
-		*/
-		/*
+
 		//SECOND PASS FOR DEPTH BUFFER
 		//bind the default framebuffer.
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.
@@ -259,6 +269,7 @@ int main()
 		//render the quad with the texture on it.
 		renderQuad();
 		*/
+
 		/*
 		//MAKING A MINI MAP DISPLAYING POST-PROCESSING DEPTH 
 		//making a viewport, for instance for a GUI minimap.
@@ -273,7 +284,7 @@ int main()
 		//render the quad with the texture on it.
 		renderQuad();
 		*/
-
+#pragma endregion
 
 		//testing purposes, print position of camera.
 		if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
