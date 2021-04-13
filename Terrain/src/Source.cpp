@@ -144,6 +144,12 @@ int main()
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 model = glm::mat4(1.0f);
 
+		glm::mat4 lightProjection;
+		glm::mat4 lightView;
+		glm::mat4 lightSpaceMatrix;
+		float nearPlane = 1.0f;
+		float farPlane = 7.5f;
+
 
 		//PERLIN NOISE shader stuff.
 		//set model, view, projection and camera data.
@@ -186,6 +192,11 @@ int main()
 		PerlinShader.setVec3("dirLight.ambient", 0.4f, 0.4f, 0.4f);
 		PerlinShader.setVec3("dirLight.diffuse", 0.2f, 0.2f, 0.2f);
 		PerlinShader.setVec3("dirLight.specular", 0.35f, 0.35f, 0.35f);
+
+		lightProjection = glm::ortho(-10.0f, 10.0f, -10.f, 10.0f, nearPlane, farPlane);
+		lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		lightSpaceMatrix = lightProjection * lightView;
+		PerlinShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 		//material properties.
 		PerlinShader.setVec3("mat.ambient", 0.3f, 0.4f, 0.3f);
