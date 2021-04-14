@@ -5,6 +5,8 @@ in vec3 normalsGS;
 in float visibilityGS;
 //in vec2 tessTexTES;
 
+//in vec4 fragPosLightSpaceGS;
+
 out vec4 finalFragColour;
 
 struct Material {
@@ -20,6 +22,8 @@ struct DirLight {
     vec3 diffuse;
     vec3 specular;
 }; 
+
+float calculateShadows(vec4 fragPLS);
 
 uniform DirLight dirLight;
 uniform Material mat;
@@ -37,6 +41,8 @@ uniform sampler2D rockTexture;
 uniform sampler2D dirtTexture;
 uniform sampler2D soilTexture;
 uniform sampler2D snowTexture;
+
+uniform sampler2D shadowMap;
 
 //for debugging the fog
 in float inNegative;
@@ -172,5 +178,34 @@ void main()
 		{
 			finalFragColour = mix(vec4(sky, 1.0f), finalFragColour, visibilityGS);
 		}
+
+		//shadow mapping things!
+		//float shadow = calculateShadows(fragPosLightSpace);
+		//combine the shadow result with the exisitng data per frag by working out how much of the fragment is NOT in the shadow.
+		//finalFragColour = vec4(ambient + (1.0f - shadow) * (diffuse + specular), 1.0f);
+		//finalFragColour = vec3(vec3(shadow), 1.0f);
+
 	}
+}
+
+float calculateShadows(vec4 fragPLS)
+{
+	float shadow = 0.0f;
+
+	//divide values in range [-1, 1].
+	vec3 projectionCoords = fragPLS.xyz / fragPLS.w;
+
+	//transform to [0, 1] range.
+	projectionCoords = projectionCoords * 0.5f + 0.5f;
+
+	//sample from shadow map (returns a float, called closestDepth).
+
+
+	//get depth of current fragment from the lights perspective (called currentDepth).
+
+
+	//check whether frag in shadow by checking if currentDepth > closestDepth.
+
+
+	return shadow;
 }

@@ -25,17 +25,20 @@ uniform bool perlinOnGPU;
 
 in vec3 posTCS[];
 in vec2 texCoordsTCS[];
+//in vec4 fragPosLightSpaceTCS[];
 
 out vec3 posTES;
 out vec2 tessTexTES;
 out vec3 normalsTES;
 out float visibilityTES;
+//out vec4 fragPosLightSpaceTES;
 
 
 void main()
 {
 	posTES = interpolate3D(posTCS[0], posTCS[1], posTCS[2]);
 	tessTexTES = interpolate2D(texCoordsTCS[0], texCoordsTCS[1], texCoordsTCS[2]);
+	//fragPosLightSpaceTES = interpolate3D(fragPosLightSpaceTCS[0], fragPosLightSpaceTCS[1], fragPosLightSpaceTCS[2]);
 
 	if(perlinOnGPU)
 	{
@@ -60,7 +63,7 @@ void main()
 		normalsTES = normalize(vec3((lr), 2.0, (ud)));
 
 		//set the .y positions, this time using the perlin noise.
-		posTES.y = noise(posTES, octaves) * scale;		//NOTE!!! Not working correctly, no height on .y created???
+		posTES.y = noise(posTES, octaves) * scale;		
 	}
 	else		//Perlin Noise on the CPU.
 	{

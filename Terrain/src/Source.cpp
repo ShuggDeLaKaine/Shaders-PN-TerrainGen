@@ -21,8 +21,8 @@
 //settings.
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 900;
-const unsigned int SHADOW_WIDTH = 1200;
-const unsigned int SHADOW_HEIGHT = 900;
+const unsigned int SHADOW_WIDTH = 1024;
+const unsigned int SHADOW_HEIGHT = 1024;
 
 //forward declared functions.
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -38,9 +38,6 @@ void setFBOdepth();
 void renderQuad();
 
 //camera.
-//Camera camera(glm::vec3(350.0f, 270.0f, 510.0f));
-//Camera camera(glm::vec3(20.0f, 645.0f, 515.0f));
-//Camera camera(glm::vec3(275.0f, 20.0f, 500.0f));
 Camera camera(glm::vec3(100.0f, 320.0f, 450.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
@@ -55,8 +52,9 @@ unsigned int FBO, depthFBO;
 unsigned int quadVAO, quadVBO;
 
 //handle for textures.
-unsigned int textureColourBuffer;
-unsigned int textureDepthBuffer;
+unsigned int textureColour;
+unsigned int textureDepth;
+//unsigned int textureShadow;
 
 // timing
 float deltaTime = 0.0f;
@@ -172,7 +170,6 @@ int main()
 		PerlinShader.setBool("useLowPolyFlatSurfaces", true);
 		PerlinShader.setBool("perlinOnGPU", true);
 		
-
 		PerlinShader.setInt("grassTexture", 1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, grassTexture);
@@ -208,12 +205,29 @@ int main()
 		PerlinShader.setVec3("mat.specular", 0.3f, 0.3f, 0.3f);
 		PerlinShader.setFloat("mat.shininess", 0.45f);
 		
-
+		/*
 #pragma region SHADOW_MAPPING
+		//FIRST PASS - render scene to the depth map texture.
+		//render scene from lights point of view.
+		postShadowDepth.use();								//use the shadow shader.
+		postShadowDepth.setMat4("lightSpaceMatrix", lightSpaceMatrix);	//configure the light space matrix.
+		// change viewport
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);		//set the view to shadow resolution.
+		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);		//bind depthFBO to it.
+		glClear(GL_DEPTH_BUFFER_BIT);
+		postShadowDepth.use();
+		renderQuad();			//render to the quad to show.
 
-
+		//SECOND PASS - render texture to the scene.
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//default framebuffer.
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		PerlinShader.use();
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textureDepth);	//bind the depth texture as shadow map.
+		//renderScene(PerlinShader);
 #pragma endregion
-
+*/
 #pragma region COLOUR_FRAMEBUFFER.
 		//FOR COLOUR BUFFER STUFF.
 		//FIRST PASS
@@ -230,20 +244,20 @@ int main()
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
 		//SECOND PASS.
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		//bind the default framebuffer.
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.
 		glDisable(GL_DEPTH_TEST);					//don't need this as no z values, 2d image being rendered.
 		postShaderColour.use();						//use the post-processor shader.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 
-		glBindTexture(GL_TEXTURE_2D, textureColourBuffer);
+		glBindTexture(GL_TEXTURE_2D, textureColour);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//render the quad with the texture on it.
 		renderQuad();
 #pragma endregion
 
 #pragma region DEPTH_FRAMBUFFER
-		/*
 		//FOR DEPTH BUFFER STUFF
 		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);		//bind the buffer
 		PerlinShader.use();							//use the shader you want for this.
@@ -256,7 +270,7 @@ int main()
 		if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
-
+		/*
 		//SECOND PASS FOR DEPTH BUFFER
 		//bind the default framebuffer.
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.
@@ -264,13 +278,13 @@ int main()
 		postShaderDepth.use();						//use the post-processor shader.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 
-		glBindTexture(GL_TEXTURE_2D, textureDepthBuffer);
+		glBindTexture(GL_TEXTURE_2D, textureDepth);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//render the quad with the texture on it.
 		renderQuad();
 		*/
 
-		/*
+		
 		//MAKING A MINI MAP DISPLAYING POST-PROCESSING DEPTH 
 		//making a viewport, for instance for a GUI minimap.
 		glViewport(920, 680, 270, 210);
@@ -279,11 +293,11 @@ int main()
 		postShaderDepth.use();						//use the post-processor shader.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 				
-		glBindTexture(GL_TEXTURE_2D, textureDepthBuffer);
+		glBindTexture(GL_TEXTURE_2D, textureDepth);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//render the quad with the texture on it.
 		renderQuad();
-		*/
+		
 #pragma endregion
 
 		//testing purposes, print position of camera.
@@ -438,8 +452,8 @@ void setFBOcolour()
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);	
 
 	//create a colour attachment texture.
-	glGenTextures(1, &textureColourBuffer);
-	glBindTexture(GL_TEXTURE_2D, textureColourBuffer);
+	glGenTextures(1, &textureColour);
+	glBindTexture(GL_TEXTURE_2D, textureColour);
 
 	//set all the sampling params
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);	//NULL as only creating the space for the texture.
@@ -447,8 +461,8 @@ void setFBOcolour()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	//bind the frame buffer and attach the texture colour buffer.
-	glBindFramebuffer(GL_FRAMEBUFFER, textureColourBuffer);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColourBuffer, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, textureColour);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColour, 0);
 	
 	//FOR RBOs, need to be doing some more stuff below. For now, just using the texture instead of the RBO.
 	unsigned int RBO;
@@ -464,8 +478,8 @@ void setFBOdepth()
 	glGenFramebuffers(1, &depthFBO);
 
 	//generate texture and bind to the buffer.
-	glGenTextures(1, &textureDepthBuffer);
-	glBindTexture(GL_TEXTURE_2D, textureDepthBuffer);
+	glGenTextures(1, &textureDepth);
+	glBindTexture(GL_TEXTURE_2D, textureDepth);
 
 	//set the depth component.
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL); // NULL, empty for start, allocates space to be filled up.
@@ -478,7 +492,7 @@ void setFBOdepth()
 	
 	//bind depth texture as FBO's depth buffer.
 	glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureDepthBuffer, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, textureDepth, 0);
 
 	//NOTE!!! GL_NONE as NO COLOR ATTACHMENT.
 	glDrawBuffer(GL_NONE);

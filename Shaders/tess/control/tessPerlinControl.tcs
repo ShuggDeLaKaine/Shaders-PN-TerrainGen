@@ -12,9 +12,11 @@ uniform float minTessLvl;
 
 in vec3 posVS[];
 in vec2 texCoordsVS[];
+//in vec4 fragPosLightSpaceVS[];
 
 out vec3 posTCS[];
 out vec2 texCoordsTCS[];
+//out vec4 fragPosLightSpaceTCS[];
 
 
 void main()
@@ -44,6 +46,7 @@ void main()
 
 	posTCS[gl_InvocationID] = posVS[gl_InvocationID];
 	texCoordsTCS[gl_InvocationID] = texCoordsVS[gl_InvocationID];
+	//fragPosLightSpaceTCS[gl_InvocationID] = fragPosLightSpaceVS[gl_InvocationID];
 }
 
 //function to set distance dependant Level-Of-Detail tessellation level, using Step method.
