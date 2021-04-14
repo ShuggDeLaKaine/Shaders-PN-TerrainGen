@@ -16,6 +16,7 @@ float noise(vec3 position, int numOctaves);
 //uniform matrices to perform transformations, previously this would have been done in vertex shader.
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 lightSpaceMatrix;		//passing this to calculate shadows in .frag
 uniform vec3 viewPos;
 uniform int scale;
 uniform int octaves;
@@ -25,20 +26,19 @@ uniform bool perlinOnGPU;
 
 in vec3 posTCS[];
 in vec2 texCoordsTCS[];
-//in vec4 fragPosLightSpaceTCS[];
 
 out vec3 posTES;
 out vec2 tessTexTES;
 out vec3 normalsTES;
 out float visibilityTES;
-//out vec4 fragPosLightSpaceTES;
+out vec4 fragPosLightSpaceTES;
 
 
 void main()
 {
 	posTES = interpolate3D(posTCS[0], posTCS[1], posTCS[2]);
 	tessTexTES = interpolate2D(texCoordsTCS[0], texCoordsTCS[1], texCoordsTCS[2]);
-	//fragPosLightSpaceTES = interpolate3D(fragPosLightSpaceTCS[0], fragPosLightSpaceTCS[1], fragPosLightSpaceTCS[2]);
+	fragPosLightSpaceTES = lightSpaceMatrix * vec4(posTES, 1.0f);
 
 	if(perlinOnGPU)
 	{

@@ -21,8 +21,8 @@
 //settings.
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 900;
-const unsigned int SHADOW_WIDTH = 1024;
-const unsigned int SHADOW_HEIGHT = 1024;
+const unsigned int SHADOW_WIDTH = 5120;
+const unsigned int SHADOW_HEIGHT = 5120;
 
 //forward declared functions.
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -44,7 +44,7 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 //lighting.
-glm::vec3 dirLightPos(0.4f, 0.6f, 0.5f);			//direction light is shining in; think of 0-1, experiment with this.
+glm::vec3 dirLightPos(0.2f, 1.0f, 0.2f);			//direction light is shining in; think of 0-1, experiment with this.
 
 //VAO, FBO etc.
 unsigned int terrainVAO, VBO, VAO, EBO;
@@ -101,11 +101,13 @@ int main()
 	Shader PerlinShader("..\\shaders\\vert\\HMVert.vs", "..\\shaders\\frag\\TerrainFrag.fs", "..\\shaders\\geo\\geoPerlin.gs",
 						"..\\shaders\\tess\\control\\tessPerlinControl.tcs", "..\\shaders\\tess\\eval\\tessPerlinEval.tes");
 
-	Shader postShaderColour("..\\shaders\\vert\\postColourVert.vs", "..\\shaders\\frag\\postColourFrag.fs");
-	Shader postShaderDepth("..\\shaders\\vert\\postDepthVert.vs", "..\\shaders\\frag\\postDepthFrag.fs");
-	Shader postShadowDepth("..\\shaders\\vert\\postShadowDepthVert.vs", "..\\shaders\\frag\\postShadowDepthFrag.fs");
+	Shader postColour("..\\shaders\\vert\\postColourVert.vs", "..\\shaders\\frag\\postColourFrag.fs");
+	Shader postDepth("..\\shaders\\vert\\postDepthVert.vs", "..\\shaders\\frag\\postDepthFrag.fs");
+	Shader postShadow("..\\shaders\\vert\\postShadowDepthVert.vs", "..\\shaders\\frag\\postShadowDepthFrag.fs");
 
 #pragma endregion
+
+#pragma region TEXTURES
 	unsigned int basicHM = loadTexture("..\\resources\\heightMaps\\heightMap.png");				//good.
 
 	unsigned int grassTexture = loadTexture("..\\resources\\textures\\grass04.jpg");
@@ -113,7 +115,7 @@ int main()
 	unsigned int dirtTexture = loadTexture("..\\resources\\textures\\dirt05.jpg");
 	unsigned int soilTexture = loadTexture("..\\resources\\textures\\soil02.png");
 	unsigned int snowTexture = loadTexture("..\\resources\\textures\\snow03.jpg");
-
+#pragma endregion
 	//terrain constructor; number of grids in width, number of grids in height, gridSize.
 	Terrain terrain(50, 50, 10);
 	terrainVAO = terrain.getVAO();
@@ -131,9 +133,8 @@ int main()
 		processInput(window);
 
 		//CHANGE THE POSITION OF THE LIGHT SOURCE.
-		//dirLightPos.x = sin(glfwGetTime()) * 1.0f;
-		//dirLightPos.z = cos(glfwGetTime()) * 1.0f;
-		//dirLightPos.y = 5.0f + cos(glfwGetTime()) * 1.0f;
+		//dirLightPos.x = sin(glfwGetTime()) * 0.5f;
+		//dirLightPos.y = 5.0f + cos(glfwGetTime()) * 0.5f;
 
 		const glm::vec3 sky(0.4f, 0.7f, 0.8f);
 
@@ -167,8 +168,8 @@ int main()
 		PerlinShader.setFloat("minTessLvl", 1.0f);
 
 		PerlinShader.setBool("useFog", true);
-		PerlinShader.setBool("useJustTextures", false);
-		PerlinShader.setBool("useTexturesAndColour", true);
+		PerlinShader.setBool("useJustTextures", true);
+		PerlinShader.setBool("useTexturesAndColour", false);
 		PerlinShader.setBool("useLowPolyFlatSurfaces", true);
 		PerlinShader.setBool("perlinOnGPU", true);
 		
@@ -209,25 +210,24 @@ int main()
 
 #pragma region SHADOW_MAPPING
 		//render scene from lights point of view.
-		postShadowDepth.use();								//use the shadow shader.
-		postShadowDepth.setMat4("lightSpaceMatrix", lightSpaceMatrix);	//configure the light space matrix.
+		postShadow.use();								//use the shadow shader.
+		postShadow.setMat4("lightSpaceMatrix", lightSpaceMatrix);	//configure the light space matrix.
 
 		//FIRST PASS - render scene to the depth map texture.
 		//set the viewport
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);		//set the view to shadow resolution.
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);		//bind depthFBO to it.
 		glClear(GL_DEPTH_BUFFER_BIT);
-		postShadowDepth.use();
-		renderQuad();			//render to the quad to show.
+		postShadow.use();
 
 		//SECOND PASS - render texture to the scene.
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//default framebuffer.
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		PerlinShader.use();
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureShadow);	//bind the depth texture as shadow map.
-		//renderScene(PerlinShader);
+		renderQuad();
 #pragma endregion
 
 #pragma region COLOUR_FRAMEBUFFER.
@@ -246,11 +246,11 @@ int main()
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
 		//SECOND PASS.
-		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		//glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		//bind the default framebuffer.
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.
 		glDisable(GL_DEPTH_TEST);					//don't need this as no z values, 2d image being rendered.
-		postShaderColour.use();						//use the post-processor shader.
+		postColour.use();							//use the post-processor shader.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 
 		glBindTexture(GL_TEXTURE_2D, textureColour);
@@ -259,7 +259,6 @@ int main()
 		renderQuad();
 #pragma endregion
 
-		
 #pragma region DEPTH_FRAMBUFFER
 		//FOR DEPTH BUFFER STUFF
 		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);		//bind the buffer
@@ -270,16 +269,17 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(terrainVAO);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
-		//MAKING A MINI MAP DISPLAYING POST-PROCESSING DEPTH 
-		//making a viewport, for instance for a GUI minimap.
 		glViewport(920, 680, 270, 210);
-		//bind the default framebuffer.
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.//default.
-		postShaderDepth.use();						//use the post-processor shader.
+
+		//MAKING A MINI MAP DISPLAYING POST-PROCESSING DEPTH 
+		postDepth.use();							//use the post-processor shader.
+		postDepth.setMat4("lightSpaceMatrix", lightSpaceMatrix);	//configure the light space matrix.
+
+		//making a viewport, for instance for a GUI minimap.
+		
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//bind the default framebuffer; 0 makes it the default frame buffer.//default.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 				
 		glBindTexture(GL_TEXTURE_2D, textureDepth);
@@ -292,7 +292,7 @@ int main()
 		//bind the default framebuffer.
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.
 		glDisable(GL_DEPTH_TEST);					//don't need this as no z values, 2d image being rendered.
-		postShaderDepth.use();						//use the post-processor shader.
+		postDepth.use();						//use the post-processor shader.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 
 		glBindTexture(GL_TEXTURE_2D, textureDepth);

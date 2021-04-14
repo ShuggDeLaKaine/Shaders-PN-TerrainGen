@@ -12,11 +12,9 @@ uniform float minTessLvl;
 
 in vec3 posVS[];
 in vec2 texCoordsVS[];
-//in vec4 fragPosLightSpaceVS[];
 
 out vec3 posTCS[];
 out vec2 texCoordsTCS[];
-//out vec4 fragPosLightSpaceTCS[];
 
 
 void main()

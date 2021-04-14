@@ -10,12 +10,12 @@ uniform bool useLowPolyFlatSurfaces;
 in vec3 posTES[];
 in vec3 normalsTES[];
 in float visibilityTES[];
-//in vec4 fragPosLightSpaceTES[];
+in vec4 fragPosLightSpaceTES[];
 
 out vec3 posGS;
 out vec3 normalsGS;
 out float visibilityGS;
-//out vec4 fragPosLightSpaceGS;
+out vec4 fragPosLightSpaceGS;
 
 void main()
 {
@@ -34,7 +34,7 @@ void main()
 	}
 	EndPrimitive();
 	
-	//how to do this?!?! I'm sick and tired of this SHIT!!!!!!
+	//how to do this with a vec4...
 	//fragPosLightSpaceGS = fragPosLightSpaceTES[];
 }
 

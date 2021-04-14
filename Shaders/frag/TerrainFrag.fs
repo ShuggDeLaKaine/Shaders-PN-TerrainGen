@@ -193,10 +193,24 @@ float calculateShadows(vec4 fragPLS)
 	//get depth of current fragment from the lights perspective (called currentDepth).
 	float currentDepth = projectionCoords.z;
 
+	//shadow anti-aliasing (deals with 'jaggie' problem)
+	vec2 texelSize = 1.0f / textureSize(shadowMap, 0);	//returns width & height of texture that's being sampled; divide by 1 to get the size of texel. Used to offset the original xy coordinates in the kernal.
+	//loop through the 3 by 3 kernal.
+	for(int i = -3; i < 2; i++)
+	{
+		for(int j = -3; j < 2; j++)
+		{
+			float PCF = texture(shadowMap, projectionCoords.xy + vec2(i, j) * texelSize).r;
+			if(currentDepth - offset > PCF)
+				shadow += 1.0f;
+		}
+	}
+	shadow = shadow / 9;	//as we are using a 3 by 3 kernal
+
 	//check whether frag in shadow by checking if currentDepth > closestDepth.
 	if(currentDepth - offset > closestDepth)
 		shadow = 1.0f;
-	if(projectionCoords.z > 1.0f)		//deals with outisde frustum problems, this makes the z value 1.0f, so full shadow, don't want this.
+	if(projectionCoords.z > 1.0f)		//deals with 'outside frustum' problem, outside frustum z value is 1.0f, so full shadow, don't want this.
 		shadow = 0.0f;
     return shadow;
 }
