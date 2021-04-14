@@ -94,7 +94,6 @@ void main()
 		vec3 specular = dirLight.specular * (spec * mat.specular);
 		lightingColour = vec4((ambient + diffuse + specular), 1.0f);
 
-
 		//terrain colour & texture attempt...
 		vec4 terrainColour = vec4(0.0f);
 		float height = posGS.y / scale;
@@ -138,33 +137,22 @@ void main()
 		//if you want to use textures AND colours together.
 		if(useTexturesAndColour)
 		{
-			if(height <= 0.1f)
-			{
+			if(height <= 0.1f) {
 				terrainColour = vec4(darkBrown.rgb, 1.0f);
 				terrainColour = terrainColour + vec4(vec3(texture(soilTexture, posGS.xz).rgb), 1.0f);
-			}
-			else if(height > 0.1f && height <= 0.2f)
-			{
+			} else if(height > 0.1f && height <= 0.2f) {
 				terrainColour = vec4(vec3(mix(darkBrown, dirtBrown, smoothstep(0.08f, 0.22f, height)).rgb), 1.0f);
 				terrainColour = terrainColour + vec4(vec3(mix(vec3(texture(soilTexture, posGS.xz)), vec3(texture(dirtTexture, posGS.xz)), smoothstep(0.07f, 0.23f, height)).rgb), 1.0f);
-			}
-			else if(height > 0.2f && height <= 0.4f)
-			{
+			} else if(height > 0.2f && height <= 0.4f) {
 				terrainColour = vec4(vec3(mix(dirtBrown, vegGreen, smoothstep(0.18f, 0.42f, height)).rgb), 1.0f);
 				terrainColour = terrainColour + vec4(vec3(mix(vec3(texture(dirtTexture, posGS.xz)), vec3(texture(grassTexture, posGS.xz)), smoothstep(0.17f, 0.43f, height)).rgb), 1.0f);
-			}
-			else if(height > 0.4f && height <= 0.5f)
-			{
+			} else if(height > 0.4f && height <= 0.5f) {
 				terrainColour = vec4(vec3(mix(vegGreen, darkGrey, smoothstep(0.38f, 0.52f, height)).rgb), 1.0f);
 				terrainColour = terrainColour + vec4(vec3(mix(vec3(texture(grassTexture, posGS.xz)), vec3(texture(rockTexture, posGS.xz)), smoothstep(0.37f, 0.53f, height)).rgb), 1.0f);
-			}
-			else if(height > 0.5f && height <= 0.8f)
-			{
+			} else if(height > 0.5f && height <= 0.8f) {
 				terrainColour = vec4(vec3(mix(darkGrey, snowWhite, smoothstep(0.48f, 0.82f, height)).rgb), 1.0f);
 				terrainColour = terrainColour + vec4(vec3(mix(vec3(texture(rockTexture, posGS.xz)), vec3(texture(snowTexture, posGS.xz)), smoothstep(0.47f, 0.83f, height)).rgb), 1.0f);
-			}
-			else if(height > 0.8f)
-			{
+			} else if(height > 0.8f) {
 				terrainColour = vec4(snowWhite.rgb, 1.0f);
 				terrainColour = terrainColour+ vec4(vec3(texture(snowTexture, posGS.xz).rgb), 1.0f);
 			}
@@ -180,9 +168,9 @@ void main()
 		}
 
 		//shadow mapping things!
-		//float shadow = calculateShadows(fragPosLightSpace);
+		///float shadow = calculateShadows(fragPosLightSpace);
 		//combine the shadow result with the exisitng data per frag by working out how much of the fragment is NOT in the shadow.
-		//finalFragColour = vec4(ambient + (1.0f - shadow) * (diffuse + specular), 1.0f);
+		///finalFragColour = vec4(ambient + (1.0f - shadow) * (diffuse + specular), 1.0f);
 		//finalFragColour = vec3(vec3(shadow), 1.0f);
 
 	}
@@ -191,6 +179,7 @@ void main()
 float calculateShadows(vec4 fragPLS)
 {
 	float shadow = 0.0f;
+	float offset = 0.015f;	//offset to deal with the 'shadow acne' problem.
 
 	//divide values in range [-1, 1].
 	vec3 projectionCoords = fragPLS.xyz / fragPLS.w;
@@ -199,13 +188,15 @@ float calculateShadows(vec4 fragPLS)
 	projectionCoords = projectionCoords * 0.5f + 0.5f;
 
 	//sample from shadow map (returns a float, called closestDepth).
-
+	float closestDepth = texture(shadowMap, projectionCoords.xy).r;
 
 	//get depth of current fragment from the lights perspective (called currentDepth).
-
+	float currentDepth = projectionCoords.z;
 
 	//check whether frag in shadow by checking if currentDepth > closestDepth.
-
-
-	return shadow;
+	if(currentDepth - offset > closestDepth)
+		shadow = 1.0f;
+	if(projectionCoords.z > 1.0f)		//deals with outisde frustum problems, this makes the z value 1.0f, so full shadow, don't want this.
+		shadow = 0.0f;
+    return shadow;
 }
