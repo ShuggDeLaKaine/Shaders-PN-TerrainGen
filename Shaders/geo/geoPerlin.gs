@@ -10,12 +10,11 @@ uniform bool useLowPolyFlatSurfaces;
 in vec3 posTES[];
 in vec3 normalsTES[];
 in float visibilityTES[];
-in vec4 fragPosLightSpaceTES[];
 
 out vec3 posGS;
 out vec3 normalsGS;
 out float visibilityGS;
-out vec4 fragPosLightSpaceGS;
+
 
 void main()
 {
@@ -33,9 +32,6 @@ void main()
 		EmitVertex();
 	}
 	EndPrimitive();
-	
-	//how to do this with a vec4...
-	//fragPosLightSpaceGS = fragPosLightSpaceTES[];
 }
 
 //function to return the normal using the gl_positions.

@@ -5,8 +5,6 @@ in vec3 normalsGS;
 in float visibilityGS;
 //in vec2 tessTexTES;
 
-//in vec4 fragPosLightSpaceGS;
-
 out vec4 finalFragColour;
 
 struct Material {
@@ -35,6 +33,7 @@ uniform int scale;
 uniform bool useFog;
 uniform bool useJustTextures;
 uniform bool useTexturesAndColour;
+uniform bool useShadowMapping;
 
 uniform sampler2D grassTexture;
 uniform sampler2D rockTexture;
@@ -42,6 +41,7 @@ uniform sampler2D dirtTexture;
 uniform sampler2D soilTexture;
 uniform sampler2D snowTexture;
 
+uniform mat4 lightSpaceMatrix;		//passing this to calculate shadows in .frag
 uniform sampler2D shadowMap;
 
 //for debugging the fog
@@ -98,7 +98,7 @@ void main()
 		vec4 terrainColour = vec4(0.0f);
 		float height = posGS.y / scale;
 
-		vec4 vegGreen = vec4(0.22f, 0.31f, 0.18f, 0.0f);
+	vec4 vegGreen = vec4(0.22f, 0.31f, 0.18f, 0.0f);
 		vec4 dirtBrown = vec4(0.56f, 0.47f, 0.26f, 0.0f);
 		vec4 darkBrown = vec4(0.26f, 0.13f, 0.0f, 0.0f);
 		vec4 stoneGrey = vec4(0.21f, 0.21f, 0.21f, 0.0f);
@@ -164,15 +164,19 @@ void main()
 		//if you want to use the fog effect.
 		if(useFog)
 		{
+			//sky.rgb = sky.rgb * 0.5f;
 			finalFragColour = mix(vec4(sky, 1.0f), finalFragColour, visibilityGS);
 		}
 
-		//shadow mapping things!
-		///float shadow = calculateShadows(fragPosLightSpace);
-		//combine the shadow result with the exisitng data per frag by working out how much of the fragment is NOT in the shadow.
-		///finalFragColour = vec4(ambient + (1.0f - shadow) * (diffuse + specular), 1.0f);
-		//finalFragColour = vec3(vec3(shadow), 1.0f);
-
+		if(useShadowMapping)
+		{
+			vec4 fragPosLightSpace = lightSpaceMatrix * vec4(posGS, 1.0f);
+			//shadow mapping.
+			float shadow = calculateShadows(fragPosLightSpace);
+			//combine the shadow result with the exisitng data per frag by working out how much of the fragment is NOT in the shadow.
+			finalFragColour = vec4(ambient + (1.0f - shadow) * (diffuse + specular), 1.0f);
+			//finalFragColour = vec3(vec3(shadow), 1.0f);
+		}
 	}
 }
 

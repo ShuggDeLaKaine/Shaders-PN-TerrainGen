@@ -8,6 +8,7 @@ uniform mat4 model;
 
 out vec2 texCoordsVS;
 
+
 void main()
 {
     texCoordsVS = aTexCoords;  

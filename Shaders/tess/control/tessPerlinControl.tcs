@@ -44,7 +44,6 @@ void main()
 
 	posTCS[gl_InvocationID] = posVS[gl_InvocationID];
 	texCoordsTCS[gl_InvocationID] = texCoordsVS[gl_InvocationID];
-	//fragPosLightSpaceTCS[gl_InvocationID] = fragPosLightSpaceVS[gl_InvocationID];
 }
 
 //function to set distance dependant Level-Of-Detail tessellation level, using Step method.

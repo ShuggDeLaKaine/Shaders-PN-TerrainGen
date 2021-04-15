@@ -17,10 +17,10 @@ void main()
 	float depth = texture(depthMap, texCoordsVS).r;
 
 	//for perspective view.
-	fragColor = vec4(vec3(lineariseTheDepth(depth) / farPlane), 1.0); 
+	fragColor = vec4(vec3(lineariseTheDepth(depth) / farPlane), 1.0f); 
 
 	//for orthographic view.
-	//fragColor = vec4(vec3(depth), 1.0);
+	//fragColor = vec4(vec3(depth), 1.0f);
 }
 
 float lineariseTheDepth(float depth)

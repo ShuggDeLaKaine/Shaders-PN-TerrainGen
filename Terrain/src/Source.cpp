@@ -21,8 +21,20 @@
 //settings.
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 900;
-const unsigned int SHADOW_WIDTH = 5120;
-const unsigned int SHADOW_HEIGHT = 5120;
+const unsigned int SHADOW_WIDTH = 1200;
+const unsigned int SHADOW_HEIGHT = 900;
+
+glm::mat4 lightProjection;
+glm::mat4 lightView;
+glm::mat4 lightSpaceMatrix;
+
+const float nearPlane = 0.1f;
+const float farPlane = 1000.0f;
+const float orthoSize = 250.0f;
+
+const glm::vec3 up(0.0f, 1.0f, 0.0f);
+//const glm::vec3 sky(0.4f, 0.7f, 0.8f);	//sky blue
+const glm::vec3 sky(0.05f, 0.05f, 0.05f);	//dark grey
 
 //forward declared functions.
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -41,10 +53,14 @@ void renderQuad();
 Camera camera(glm::vec3(100.0f, 320.0f, 450.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
+
+//bools.
 bool firstMouse = true;
+bool firstFrame = true;
 
 //lighting.
-glm::vec3 dirLightPos(0.2f, 1.0f, 0.2f);			//direction light is shining in; think of 0-1, experiment with this.
+glm::vec3 dirLightPos(0.35f, 0.85f, -0.2f);			//direction light is shining in; think of 0-1, experiment with this.
+
 
 //VAO, FBO etc.
 unsigned int terrainVAO, VBO, VAO, EBO;
@@ -92,19 +108,12 @@ int main()
 #pragma endregion
 
 #pragma region SHADERS
-	Shader HeightMapMShader("..\\shaders\\vert\\HMVert.vs", "..\\shaders\\frag\\HMFrag.fs", "..\\shaders\\geo\\geoHM.gs",
-						"..\\shaders\\tess\\control\\tessHMControl.tcs", "..\\shaders\\tess\\eval\\tessHMEval.tes");
-
-	Shader TerrainShader("..\\shaders\\vert\\HMVert.vs", "..\\shaders\\frag\\TerrainFrag.fs", "..\\shaders\\geo\\geoHM.gs",
-						"..\\shaders\\tess\\control\\tessHMControl.tcs", "..\\shaders\\tess\\eval\\tessHMEval.tes");
-
 	Shader PerlinShader("..\\shaders\\vert\\HMVert.vs", "..\\shaders\\frag\\TerrainFrag.fs", "..\\shaders\\geo\\geoPerlin.gs",
 						"..\\shaders\\tess\\control\\tessPerlinControl.tcs", "..\\shaders\\tess\\eval\\tessPerlinEval.tes");
 
 	Shader postColour("..\\shaders\\vert\\postColourVert.vs", "..\\shaders\\frag\\postColourFrag.fs");
 	Shader postDepth("..\\shaders\\vert\\postDepthVert.vs", "..\\shaders\\frag\\postDepthFrag.fs");
 	Shader postShadow("..\\shaders\\vert\\postShadowDepthVert.vs", "..\\shaders\\frag\\postShadowDepthFrag.fs");
-
 #pragma endregion
 
 #pragma region TEXTURES
@@ -123,7 +132,7 @@ int main()
 	//initialise these before the while loop.
 	setFBOcolour();
 	setFBOdepth(depthFBO, textureDepth);
-	setFBOdepth(shadowFBO, textureShadow);
+	//setFBOdepth(shadowFBO, textureShadow);
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -134,25 +143,16 @@ int main()
 
 		//CHANGE THE POSITION OF THE LIGHT SOURCE.
 		//dirLightPos.x = sin(glfwGetTime()) * 0.5f;
-		//dirLightPos.y = 5.0f + cos(glfwGetTime()) * 0.5f;
-
-		const glm::vec3 sky(0.4f, 0.7f, 0.8f);
+		//dirLightPos.y = 5.0f + cos(glfwGetTime()) * 2.0f;
 
 		glClearColor(sky.r, sky.g, sky.b, 1.0f);
 		if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
+			glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 1000.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, nearPlane, farPlane);
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 model = glm::mat4(1.0f);
-
-		glm::mat4 lightProjection;
-		glm::mat4 lightView;
-		glm::mat4 lightSpaceMatrix;
-		float nearPlane = 1.0f;	//NOTE, may need to change frustum to encompass whole scene.
-		float farPlane = 7.5f;	//NOTE, may need to change frustum to encompass whole scene.
 
 		//PERLIN NOISE shader stuff.
 		//set model, view, projection and camera data.
@@ -172,7 +172,8 @@ int main()
 		PerlinShader.setBool("useTexturesAndColour", false);
 		PerlinShader.setBool("useLowPolyFlatSurfaces", true);
 		PerlinShader.setBool("perlinOnGPU", true);
-		
+		PerlinShader.setBool("useShadowMapping", false);
+
 		PerlinShader.setInt("grassTexture", 1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, grassTexture);
@@ -195,9 +196,9 @@ int main()
 		PerlinShader.setVec3("dirLight.diffuse", 0.2f, 0.2f, 0.2f);
 		PerlinShader.setVec3("dirLight.specular", 0.35f, 0.35f, 0.35f);
 
-		lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		//DON'T LIKE THAT HARD CODED 10, 10, 10, 10.... needs to be automatic.
-		lightProjection = glm::ortho(-10.0f, 10.0f, -10.f, 10.0f, nearPlane, farPlane); //NOTE, may need to change frustum to encompass whole scene.		//using ortho as trying to model the sun, which is quite far away... so light rays are assumed to be parallel, no deform due to perspective projection.
+		//light-space projection.
+		lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f), up);
+		lightProjection = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, nearPlane, farPlane); //using ortho as trying to model the sun, which is quite far away... so light rays are assumed to be parallel, no deform due to perspective projection.
 		lightSpaceMatrix = lightProjection * lightView;
 		PerlinShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
@@ -206,33 +207,43 @@ int main()
 		PerlinShader.setVec3("mat.diffuse", 0.4f, 0.7f, 0.7f);
 		PerlinShader.setVec3("mat.specular", 0.3f, 0.3f, 0.3f);
 		PerlinShader.setFloat("mat.shininess", 0.45f);
-		
+
 
 #pragma region SHADOW_MAPPING
+		/*
 		//render scene from lights point of view.
-		postShadow.use();								//use the shadow shader.
-		postShadow.setMat4("lightSpaceMatrix", lightSpaceMatrix);	//configure the light space matrix.
+		//IF YOU WANT LIGHT SOURCE TO MOVE, REMOVE THIS FIRSTFRAME CHECK.
+		//if (firstFrame)
+		//{
+			//FIRST PASS - render scene to the depth map texture.
+			postShadow.use();											//use the shadow shader.
+			postShadow.setMat4("lightSpaceMatrix", lightSpaceMatrix);	//configure the light space matrix.
 
-		//FIRST PASS - render scene to the depth map texture.
-		//set the viewport
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);		//set the view to shadow resolution.
-		glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);		//bind depthFBO to it.
-		glClear(GL_DEPTH_BUFFER_BIT);
-		postShadow.use();
+			//set the viewport
+			glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);		//set the view to shadow resolution.
+			glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);		//bind depthFBO to it.
+			glEnable(GL_DEPTH_TEST);
+			glClearColor(sky.r, sky.g, sky.b, 1.0f);
+			glClear(GL_DEPTH_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glDrawArrays(GL_PATCHES, 0, terrain.getSize());
+			//firstFrame = false;
+		//}
 
 		//SECOND PASS - render texture to the scene.
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//default framebuffer.
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		PerlinShader.use();
+		postShadow.use();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, textureShadow);	//bind the depth texture as shadow map.
 		renderQuad();
+		*/
 #pragma endregion
 
 #pragma region COLOUR_FRAMEBUFFER.
 		//FOR COLOUR BUFFER STUFF.
 		//FIRST PASS
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);		//bind the buffer
 		PerlinShader.use();							//use the shader you want for this.
 		glEnable(GL_DEPTH_TEST);					//depth testing enabled.
@@ -246,11 +257,16 @@ int main()
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
 		//SECOND PASS.
-		//glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		//bind the default framebuffer.
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.
 		glDisable(GL_DEPTH_TEST);					//don't need this as no z values, 2d image being rendered.
 		postColour.use();							//use the post-processor shader.
+		postColour.setBool("useInverse", false);
+		postColour.setBool("useGreyscale", false);
+		postColour.setBool("useIntoxicateFX", false);
+		postColour.setBool("useBlurFX", false);
+		postColour.setBool("useEdgeDetectFX", false);
+		postColour.setBool("useNightVisionFX", true);
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 
 		glBindTexture(GL_TEXTURE_2D, textureColour);
@@ -260,25 +276,23 @@ int main()
 #pragma endregion
 
 #pragma region DEPTH_FRAMBUFFER
+		/*
 		//FOR DEPTH BUFFER STUFF
 		glBindFramebuffer(GL_FRAMEBUFFER, depthFBO);		//bind the buffer
 		PerlinShader.use();							//use the shader you want for this.
 		glEnable(GL_DEPTH_TEST);					//depth testing enabled.
 		//standard usual stuff below.
-		glClearColor(sky.r, sky.g, sky.b, 1.0f);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(terrainVAO);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_PATCHES, 0, terrain.getSize());
 
-		glViewport(920, 680, 270, 210);
-
 		//MAKING A MINI MAP DISPLAYING POST-PROCESSING DEPTH 
-		postDepth.use();							//use the post-processor shader.
-		postDepth.setMat4("lightSpaceMatrix", lightSpaceMatrix);	//configure the light space matrix.
-
+		postDepth.use();										//use the post-processor shader.
+		postDepth.setMat4("lightSpaceMatrix", lightSpaceMatrix);//configure the light space matrix.
 		//making a viewport, for instance for a GUI minimap.
-		
+		glViewport(920, 680, 270, 210);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//bind the default framebuffer; 0 makes it the default frame buffer.//default.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 				
@@ -286,15 +300,16 @@ int main()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//render the quad with the texture on it.
 		renderQuad();
-		
+		*/
 		/*
 		//SECOND PASS FOR DEPTH BUFFER
 		//bind the default framebuffer.
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);		//0 makes it the default frame buffer.
 		glDisable(GL_DEPTH_TEST);					//don't need this as no z values, 2d image being rendered.
 		postDepth.use();						//use the post-processor shader.
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
-		//bind the colour and depth 
+		//bind the colour and depth
 		glBindTexture(GL_TEXTURE_2D, textureDepth);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//render the quad with the texture on it.
@@ -313,6 +328,14 @@ int main()
 	glfwTerminate();
 	return 0;
 }
+
+
+
+
+
+
+
+
 
 
 
