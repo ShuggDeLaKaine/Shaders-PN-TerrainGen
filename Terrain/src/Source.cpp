@@ -64,11 +64,11 @@ glm::vec3 dirLightPos(0.35f, 0.85f, -0.2f);			//direction light is shining in; t
 
 //VAO, FBO etc.
 unsigned int terrainVAO, VBO, VAO, EBO;
-unsigned int FBO, depthFBO, shadowFBO;
+unsigned int sceneFBO, depthFBO, shadowFBO;
 unsigned int quadVAO, quadVBO;
 
 //handle for textures.
-unsigned int textureColour;
+unsigned int textureScene;
 unsigned int textureDepth;
 unsigned int textureShadow;
 
@@ -244,7 +244,7 @@ int main()
 		//FOR COLOUR BUFFER STUFF.
 		//FIRST PASS
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, FBO);		//bind the buffer
+		glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);		//bind the buffer
 		PerlinShader.use();							//use the shader you want for this.
 		glEnable(GL_DEPTH_TEST);					//depth testing enabled.
 		//standard usual stuff below.
@@ -269,7 +269,7 @@ int main()
 		postColour.setBool("useNightVisionFX", false);
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 
-		glBindTexture(GL_TEXTURE_2D, textureColour);
+		glBindTexture(GL_TEXTURE_2D, textureScene);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		//render the quad with the texture on it.
 		renderQuad();
@@ -473,12 +473,12 @@ void setVAO(vector <float> vertices)
 void setFBOcolour()
 {
 	//generate and bind the frame buffer.
-	glGenFramebuffers(1, &FBO);		// 0 is default for an FBO.
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);	
+	glGenFramebuffers(1, &sceneFBO);		// 0 is default for an FBO.
+	glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
 
 	//create a colour attachment texture.
-	glGenTextures(1, &textureColour);
-	glBindTexture(GL_TEXTURE_2D, textureColour);
+	glGenTextures(1, &textureScene);
+	glBindTexture(GL_TEXTURE_2D, textureScene);
 
 	//set all the sampling params
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);	//NULL as only creating the space for the texture.
@@ -486,8 +486,8 @@ void setFBOcolour()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	//bind the frame buffer and attach the texture colour buffer.
-	glBindFramebuffer(GL_FRAMEBUFFER, textureColour);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColour, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, textureScene);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureScene, 0);
 	
 	//FOR RBOs, need to be doing some more stuff below. For now, just using the texture instead of the RBO.
 	unsigned int RBO;

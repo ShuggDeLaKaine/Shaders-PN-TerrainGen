@@ -110,7 +110,7 @@ void nightVisionFX()
 	//sample scene texture.
 	vec3 sceneCol = texture(sceneTexture, texCoordsVS.st).rgb;   
 	
-	//color intensity, night vision so green.
+	//colour intensity, night vision so green.
 	const vec3 lumon = vec3(0.28f, 0.63f, 0.09f);
 	float inten = dot(lumon, sceneCol) ;
 
@@ -120,9 +120,9 @@ void nightVisionFX()
 	//final green [0-1].
 	float finalGreen = clamp(inten / 0.55f, 0.0f, 1.0f) * intensity;
 
-	//maxing freen for vision colour.
+	//maxing green for vision colour.
 	vec3 visionColor = vec3(0.0f, finalGreen, 0.0f); 
 
-	//final frag color.
+	//final frag colour.
 	fragColor = vec4((sceneCol * visionColor), 1.0f);
 }
