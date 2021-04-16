@@ -11,7 +11,7 @@ uniform bool useInverse;
 uniform bool useGreyscale;
 uniform bool useIntoxicateFX;
 uniform bool useBlurFX;
-uniform bool useEdgeDetectFX;
+uniform bool useOutlineFX;
 uniform bool useNightVisionFX;
 
 out vec4 fragColor;
@@ -34,7 +34,7 @@ void main()
 		createFX();
 	else if(useBlurFX)
 		createFX();
-	else if(useEdgeDetectFX)
+	else if(useOutlineFX)
 		createFX();
 	else if(useNightVisionFX)
 		nightVisionFX();
@@ -76,8 +76,8 @@ void createFX()
 			2.0f / 16.0f,	4.0f / 16.0f,	2.0f / 16.0f,
 			1.0f / 16.0f,	2.0f / 16.0f,	1.0f / 16.0f  
 		);
-	} else if (useEdgeDetectFX) {
-		//make sure they all add up to 1.0f
+	} else if (useOutlineFX) {
+		//make sure they all add up to 1.0f.
 		kernel = float[](
 			1.0f,	1.0f,	1.0f,
 			1.0f,  -8.0f,	1.0f,

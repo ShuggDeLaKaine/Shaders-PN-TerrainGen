@@ -94,11 +94,11 @@ void main()
 		vec3 specular = dirLight.specular * (spec * mat.specular);
 		lightingColour = vec4((ambient + diffuse + specular), 1.0f);
 
-		//terrain colour & texture attempt...
+		//terrain colour & texture
 		vec4 terrainColour = vec4(0.0f);
 		float height = posGS.y / scale;
 
-	vec4 vegGreen = vec4(0.22f, 0.31f, 0.18f, 0.0f);
+		vec4 vegGreen = vec4(0.22f, 0.31f, 0.18f, 0.0f);
 		vec4 dirtBrown = vec4(0.56f, 0.47f, 0.26f, 0.0f);
 		vec4 darkBrown = vec4(0.26f, 0.13f, 0.0f, 0.0f);
 		vec4 stoneGrey = vec4(0.21f, 0.21f, 0.21f, 0.0f);
@@ -161,10 +161,9 @@ void main()
 		//combine the height/colour terrain with the lighting colour.
 		finalFragColour = terrainColour + lightingColour;
 
-		//if you want to use the fog effect.
+		//if using the fog effect.
 		if(useFog)
 		{
-			//sky.rgb = sky.rgb * 0.5f;
 			finalFragColour = mix(vec4(sky, 1.0f), finalFragColour, visibilityGS);
 		}
 

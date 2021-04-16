@@ -33,8 +33,8 @@ const float farPlane = 1000.0f;
 const float orthoSize = 250.0f;
 
 const glm::vec3 up(0.0f, 1.0f, 0.0f);
-//const glm::vec3 sky(0.4f, 0.7f, 0.8f);	//sky blue
-const glm::vec3 sky(0.05f, 0.05f, 0.05f);	//dark grey
+//const glm::vec3 sky(0.4f, 0.6f, 0.9f);		//sky blue
+const glm::vec3 sky(0.12f, 0.12f, 0.12f);	//dark grey
 
 //forward declared functions.
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -126,7 +126,7 @@ int main()
 	unsigned int snowTexture = loadTexture("..\\resources\\textures\\snow03.jpg");
 #pragma endregion
 	//terrain constructor; number of grids in width, number of grids in height, gridSize.
-	Terrain terrain(50, 50, 10);
+	Terrain terrain(100, 100, 10);
 	terrainVAO = terrain.getVAO();
 
 	//initialise these before the while loop.
@@ -265,8 +265,8 @@ int main()
 		postColour.setBool("useGreyscale", false);
 		postColour.setBool("useIntoxicateFX", false);
 		postColour.setBool("useBlurFX", false);
-		postColour.setBool("useEdgeDetectFX", false);
-		postColour.setBool("useNightVisionFX", true);
+		postColour.setBool("useOutlineFX", false);
+		postColour.setBool("useNightVisionFX", false);
 		glActiveTexture(GL_TEXTURE0);				//make active texture.
 		//bind the colour and depth 
 		glBindTexture(GL_TEXTURE_2D, textureColour);

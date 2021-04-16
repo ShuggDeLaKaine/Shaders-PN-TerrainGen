@@ -3,7 +3,7 @@
 //reading in a triangle, split tesselated triangels evenly in a counter-clockwise direction (ccw).
 //layout (triangles, equal_spacing, ccw) in;					//TESTING - unhappy with bumping transitions in LOD as moving, not great.
 layout (triangles, fractional_even_spacing, ccw) in;			//TESTING - much smoother transitions in LOD as moving.
-//layout (triangles, fractional_odd_spacing, ccw) in;			//TESTING - smoother transitions in LOD as moving BUT final feel more hard edged and low poly
+//layout (triangles, fractional_odd_spacing, ccw) in;			//TESTING - smoother transitions in LOD as moving BUT final feel harder edged and low poly.
 
 //forward declare functions to perfrom interpolation with the barycentric coordinates from the Primitive Generator.
 vec2 interpolate2D(vec2 v0, vec2 v1, vec2 v2);
@@ -133,8 +133,8 @@ float noise(vec3 position, int numOctaves)
 	float total = 0.0f;
 	float maxAmplitude = 0.0f;
 
-	float amplitude = 100.0f;
-	float frequency = 0.005f;
+	float amplitude = 180.0f;
+	float frequency = 0.006f;
 
 	for (int i = 0; i < numOctaves; i++)
 	{
